@@ -100,10 +100,17 @@ router.post('/', (req: Request<Record<string, unknown>, Record<string, unknown>,
         _logo_: utils.extractFilename(config.get('application.logo'))
       }
 
-      if (req.body.layout) {
-        const filePath: string = path.resolve(req.body.layout).toLowerCase()
+      if (req.body.layout && typeof req.body.layout === 'string') {
+        const layoutParam = req.body.layout.replace(/\\/g, '/')
+        const projectRootDir = path.resolve(__dirname, '..')
+        const viewsDir = path.resolve(projectRootDir, 'views')
+        const layoutPath = path.resolve(viewsDir, layoutParam)
+        const relativePath = path.relative(projectRootDir, layoutPath)
+        const isOutsideProject = relativePath.startsWith('..') || path.isAbsolute(relativePath)
+
+        const filePath: string = layoutPath.toLowerCase()
         const isForbiddenFile: boolean = (filePath.includes('ftp') || filePath.includes('ctf.key') || filePath.includes('encryptionkeys'))
-        if (!isForbiddenFile) {
+        if (!isOutsideProject && !isForbiddenFile) {
           res.render('dataErasureResult', {
             ...req.body,
             ...themeVars
